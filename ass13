@@ -1,0 +1,64 @@
+Create a clock. What will be your approach to solving this problem statement?
+Hint 1:- Use flutter inbuilt library
+Hint 2:- Use only a timer.
+Hint 3:- Clock runs only for 1 sec.
+source code
+import 'package:flutter/material.dart';
+import 'dart:async';
+class OneSecondClock extends StatefulWidget {
+  @override
+  _OneSecondClockState createState() => _OneSecondClockState();
+}
+
+class _OneSecondClockState extends State<OneSecondClock> {
+  String _currentTime = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _startClock();
+  }
+
+  void _startClock() {
+    // Get the current time immediately
+    _updateTime();
+
+    // Run timer for 1 second
+    Timer(Duration(seconds: 1), () {
+      _updateTime();
+      // Clock stops automatically after this one tick
+    });
+  }
+
+  void _updateTime() {
+    final now = DateTime.now();
+    setState(() {
+      _currentTime = "${now.hour.toString().padLeft(2, '0')}:"
+          "${now.minute.toString().padLeft(2, '0')}:"
+          "${now.second.toString().padLeft(2, '0')}";
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Text(
+          _currentTime,
+          style: TextStyle(
+            color: Colors.greenAccent,
+            fontSize: 50,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+}
+void main() {
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: OneSecondClock(),
+  ));
+}
