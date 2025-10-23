@@ -1,0 +1,214 @@
+ Is there any way to rotate an image clock clockwise and anti-clockwise by clicking on a single button?
+Hint 1:- Use RotationTransition widget for rotation purposes.
+Hint 2:- Add a button for controlling image rotation. 
+source code
+import 'package:flutter/material.dart';
+import 'dart:math';
+
+void main() => runApp(const MyApp());
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Rotate Image Demo',
+      home: const RotateStepPage(),
+    );
+  }
+}
+
+class RotateStepPage extends StatefulWidget {
+  const RotateStepPage({super.key});
+  @override
+  State<RotateStepPage> createState() => _RotateStepPageState();
+}
+
+class _RotateStepPageState extends State<RotateStepPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  // keep track of current "turns" (1.0 == full rotation). We use turns so RotationTransition is simple.
+  double _currentTurns = 0.0;
+  bool _nextClockwise = true; // toggles between clockwise and anticlockwise
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 350),
+      vsync: this,
+    );
+    _animation = AlwaysStoppedAnimation(_currentTurns);
+  }
+
+  void _rotateStep() {
+    final double step = 0.25; // 0.25 turns = 90 degrees
+    final double target = _currentTurns + (_nextClockwise ? step : -step);
+
+    // create new tween from currentTurns to target
+    _animation = Tween<double>(begin: _currentTurns, end: target)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    // run animation
+    _controller
+      ..reset()
+      ..forward().whenComplete(() {
+        // update current turns and normalize to keep numbers small
+        _currentTurns = target % 1.0;
+        // toggle direction for next click
+        setState(() {
+          _nextClockwise = !_nextClockwise;
+        });
+      });
+
+    // trigger rebuild so RotationTransition reads the new animation
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Use RotationTransition which reads animation of "turns"
+    return Scaffold(
+      appBar: AppBar(title: const Text('Rotate 90°: alternate CW / CCW')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            RotationTransition(
+              turns: _animation,
+              child: SizedBox(
+                width: 220,
+                height: 220,
+                child: Image.asset('assets/sample_image.png', fit: BoxFit.cover),
+              ),
+            ),
+            const SizedBox(height: 28),
+            ElevatedButton.icon(
+              onPressed: _rotateStep,
+              icon: const Icon(Icons.rotate_right),
+              label: Text(_nextClockwise ? 'Rotate Clockwise 90°' : 'Rotate Anticlockwise 90°'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+
+void main() => runApp(const MyApp2());
+
+class MyApp2 extends StatelessWidget {
+  const MyApp2({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Continuous Rotate Demo',
+      home: const ContinuousRotatePage(),
+    );
+  }
+}
+
+class ContinuousRotatePage extends StatefulWidget {
+  const ContinuousRotatePage({super.key});
+  @override
+  State<ContinuousRotatePage> createState() => _ContinuousRotatePageState();
+}
+
+class _ContinuousRotatePageState extends State<ContinuousRotatePage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  bool _clockwise = true;
+  bool _running = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // duration defines one full spin duration
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 2));
+    // controller.repeat() will cause continuous rotation
+  }
+
+  void _toggleRunAndDirection() {
+    if (_running) {
+      // currently running -> stop
+      _controller.stop();
+      setState(() {
+        _running = false;
+      });
+    } else {
+      // not running -> start in the next direction (toggle)
+      setState(() {
+        _clockwise = !_clockwise;
+        _running = true;
+      });
+      if (_clockwise) {
+        // forward repeats from 0 to 1 (clockwise)
+        _controller.repeat();
+      } else {
+        // to rotate anticlockwise, animate backward: use reverse repeating
+        // we drive time backward by reversing the animation rate
+        _controller.repeat(reverse: false);
+        _controller.value = 1.0; // start from 1 so reversing is visible
+        // then set the speed negative by using a ticker that updates value decreasingly
+        // simpler: use Transform.rotate with negative angle based on controller.value below
+        // but RotationTransition does only turns, so we'll multiply by -1 in a `AnimatedBuilder`.
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // We'll use AnimatedBuilder so we can invert direction easily:
+    return Scaffold(
+      appBar: AppBar(title: const Text('Continuous rotation (toggle direction)')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                // use a double angle; for anticlockwise multiply by -1
+                final double turns = (_controller.value) * (_clockwise ? 1.0 : -1.0);
+                return RotationTransition(
+                  turns: AlwaysStoppedAnimation(turns),
+                  child: child,
+                );
+              },
+              child: SizedBox(
+                width: 220,
+                height: 220,
+                child: Image.asset('assets/sample_image.png', fit: BoxFit.cover),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _toggleRunAndDirection,
+              icon: Icon(_running ? Icons.stop : Icons.play_arrow),
+              label: Text(_running
+                  ? 'Stop (currently ${_clockwise ? 'clockwise' : 'anticlockwise'})'
+                  : 'Start (will switch direction)'),
+            ),
+            const SizedBox(height: 8),
+            Text('Next start will be: ${_clockwise ? 'anticlockwise' : 'clockwise'}'),
+          ],
+        ),
+      ),
+    );
+  }
+}
