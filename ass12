@@ -1,0 +1,85 @@
+ Show the start and end date in the date picker. But the end date should be 29 days ago from the start date. What will be your approach to getting this problem statement?
+Hint 1:- Use the date picker library for selecting the start and end date.
+Hint 2:- Add the logic which is end data should be 29 days ago from the start date.
+source code
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:gravity="center"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Button
+        android:id="@+id/btnPickStartDate"
+        android:text="Pick Start Date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/tvStartDate"
+        android:text="Start Date:"
+        android:layout_marginTop="20dp"
+        android:textSize="18sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/tvEndDate"
+        android:text="End Date:"
+        android:layout_marginTop="10dp"
+        android:textSize="18sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+</LinearLayout>
+import android.app.DatePickerDialog
+import android.os.Bundle
+import android.widget.Button
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import java.text.SimpleDateFormat
+import java.util.*
+
+class DateActivity : AppCompatActivity() {
+
+    private lateinit var btnPickStartDate: Button
+    private lateinit var tvStartDate: TextView
+    private lateinit var tvEndDate: TextView
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_date)
+
+        btnPickStartDate = findViewById(R.id.btnPickStartDate)
+        tvStartDate = findViewById(R.id.tvStartDate)
+        tvEndDate = findViewById(R.id.tvEndDate)
+
+        val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+
+        btnPickStartDate.setOnClickListener {
+            // Current date as default
+            val calendar = Calendar.getInstance()
+            val year = calendar.get(Calendar.YEAR)
+            val month = calendar.get(Calendar.MONTH)
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+            val datePickerDialog = DatePickerDialog(this, { _, selectedYear, selectedMonth, selectedDay ->
+                // Set start date
+                val startCalendar = Calendar.getInstance()
+                startCalendar.set(selectedYear, selectedMonth, selectedDay)
+                val startDate = startCalendar.time
+
+                tvStartDate.text = "Start Date: ${dateFormat.format(startDate)}"
+
+                // Calculate end date (29 days ago)
+                startCalendar.add(Calendar.DAY_OF_MONTH, -29)
+                val endDate = startCalendar.time
+
+                tvEndDate.text = "End Date (29 days ago): ${dateFormat.format(endDate)}"
+
+            }, year, month, day)
+
+            datePickerDialog.show()
+        }
+    }
+}
